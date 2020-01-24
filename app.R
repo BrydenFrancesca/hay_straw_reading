@@ -129,7 +129,7 @@ server <- function(input, output) {
   
   ##Save trade comment
   pdf_comment = reactive({
-    trade_row <- raw_prices()[grep("Trade", raw_prices()$text), 4]
+    trade_row <- unique(raw_prices()[grep("Trade", raw_prices()$text), 4])
     trade_comment <- raw_prices() %>% filter(y == as.numeric(trade_row))
     trade_comment <- paste(trade_comment$text, collapse = " ")
     trade_comment
@@ -147,7 +147,7 @@ server <- function(input, output) {
   
   ##Remove comment
   pdf_hay_prices = reactive({
-    trade_row <- raw_prices()[grep("Trade", raw_prices()$text), 4]
+    trade_row <- unique(raw_prices()[grep("Trade", raw_prices()$text), 4])
     new_month_hay1 <- raw_prices() %>% filter(y != as.numeric(trade_row))
     
     ##Clean data
@@ -157,9 +157,10 @@ server <- function(input, output) {
     find_cols <- new_month_hay1 %>% filter(text == "Pick-up" | text == "straw"| text == "baled")
     find_cols <- dplyr::pull(find_cols, y)
     find_start <- min(new_month_hay$x)-1
+    find_all <- unique(c(find_start, find_rows))
     
     ###Split into columns
-    new_month_hay <-  new_month_hay %>% mutate(col = cut(x, breaks = c(find_start, find_rows, Inf) 
+    new_month_hay <-  new_month_hay %>% mutate(col = cut(x, breaks = c(find_all, Inf) 
     )) %>% 
       arrange(col, y) %>% 
       group_by(col, y) %>% 
