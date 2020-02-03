@@ -1,4 +1,9 @@
 setwd("L:/Prices/Dashboards/Hay and straw")
+
+if (!require("pacman")) install.packages("pacman")
+library(pacman)
+pacman::p_load(zoo, dplyr, readxl, data.table, stringr, reshape2, pdftools, shiny, shinythemes, 
+               writexl, DT, tidyr,tibble)
 library(zoo)
 library(dplyr)
 library(readxl)
@@ -329,7 +334,6 @@ server <- function(input, output) {
     content = function(file) {write_xlsx(list("Weekly prices" = weekly_mean(), "Monthly prices" = monthly_mean(), "Comments" = bound_comments()),format_headers = T, path = file)}
   )
   
-
   ##When the submit button is clicked, save data and bring up box to say process was successful
   observeEvent(input$submit_hay, {
     write_xlsx(list("Full series" = bound_series(), "Weekly prices" = weekly_mean(), "Monthly prices" = monthly_mean(), "Comments" = bound_comments()), path = "L:/Prices/AMR/Hay&Straw/hay_straw_prices.xlsx")
