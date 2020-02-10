@@ -4,20 +4,6 @@ if (!require("pacman")) install.packages("pacman")
 library(pacman)
 pacman::p_load(zoo, dplyr, readxl, data.table, stringr, reshape2, pdftools, shiny, shinythemes, 
                writexl, DT, tidyr,tibble)
-library(zoo)
-library(dplyr)
-library(readxl)
-library(data.table)
-library(stringr)
-library(reshape2)
-library(data.table)
-library(pdftools)
-library(shiny)
-library(shinythemes)
-library(writexl)
-library(DT)
-library(tidyr)
-library(tibble)
 
 # Define UI for data upload app ----
 ui <- fluidPage(theme = shinytheme("united"),
@@ -98,14 +84,14 @@ server <- function(input, output) {
   
   ##Load in backseries####
   backseries_hay = reactive({
-    data <- as_tibble(read_xlsx("Data/hay_straw_prices.xlsx", sheet = 1))
+    data <- read_xlsx("Data/hay_straw_prices.xlsx", sheet = 1)
     data$Date <- as.Date(data$Date)
     data
   })
   
   ##Load in backseries of comments
   backseries_comments = reactive({
-    comments <-  as_tibble(read_xlsx("Data/hay_straw_prices.xlsx", sheet = 4))
+    comments <-  read_xlsx("Data/hay_straw_prices.xlsx", sheet = 4)
     comments$Date <- as.Date(comments$Date)
     comments
   })
@@ -122,14 +108,11 @@ server <- function(input, output) {
   })
   
   ####PDF reading#####
+  ##Load in data
   raw_prices = reactive({
     validate(
-      need(input$file_hay != "", "Please select a PDF")
-    )
-    ##Load in data
-    new_month_hay1 <- pdf_data(input$file_hay$datapath)
-    new_month_hay1 <- as_tibble(new_month_hay1[[1]])
-    new_month_hay1
+      need(input$file_hay != "", "Please select a PDF"))
+    new_month_hay1 <- pdf_data(input$file_hay$datapath)[[1]]
   })
   
   ##Save trade comment
@@ -145,35 +128,36 @@ server <- function(input, output) {
     date_row <- raw_prices()[grep("W[[:punct:]]E", raw_prices()$text),4]
     data_date <- raw_prices() %>% filter(y == as.numeric(date_row))
     data_date$text <- as.Date(data_date$text, format = "%d/%m/%y") 
-    data_date <- na.omit(data_date)
-    data_date <- data_date %>% select(text) 
-    data_date <- dplyr::pull(data_date)
-    data_date})
+    data_date <- data_date %>% 
+      na.omit() %>% 
+      select(text) %>% 
+      dplyr::pull()
+  })
   
   ##Remove comment
   pdf_hay_prices = reactive({
     trade_row <- unique(raw_prices()[grep("Trade", raw_prices()$text), 4])
     new_month_hay1 <- raw_prices() %>% filter(y != as.numeric(trade_row))
     
-    ##Clean data
+    #Find coordinates corresponding to rows and columns in data
     new_month_hay <- new_month_hay1 %>% filter(y > as.numeric(new_month_hay1[grep("Source", new_month_hay1$text), 4]))
-    find_rows <- new_month_hay1 %>% filter(text == "hay" | text == "straw"| text == "West")  
+    find_rows <- new_month_hay1 %>% filter(text == "hay" | text == "straw"| text == "West")
     find_rows <- dplyr::pull(find_rows, x) +1
     find_cols <- new_month_hay1 %>% filter(text == "Pick-up" | text == "straw"| text == "baled")
-    find_cols <- dplyr::pull(find_cols, y)
+    find_cols <- unique(dplyr::pull(find_cols, y))
     find_start <- min(new_month_hay$x)-1
     find_all <- unique(c(find_start, find_rows))
     
-    ###Split into columns
-    new_month_hay <-  new_month_hay %>% mutate(col = cut(x, breaks = c(find_all, Inf) 
-    )) %>% 
-      arrange(col, y) %>% 
-      group_by(col, y) %>% 
-      mutate(text = paste(text, collapse = " ")) %>% 
+    ##Split into columns
+    new_month_hay <-  new_month_hay %>%
+      mutate(col = cut(x, breaks = c(find_all, Inf))) %>%
+      arrange(col, y) %>%
+      group_by(col, y) %>%
+      mutate(text = paste(text, collapse = " ")) %>%
       ungroup() %>%
-      select(y, text, col) %>% 
-      unique() %>% 
-      spread(col, text) 
+      select(y, text, col) %>%
+      unique() %>%
+      spread(col, text)
     
     #Create column names
     column_names <- new_month_hay %>% filter(y %in% find_cols) %>% select(-y)
@@ -187,11 +171,11 @@ server <- function(input, output) {
     colnames(new_month_hay) <- column_names
     
     ##Clean data in table
-    new_month_hay[] <- lapply(new_month_hay, gsub, pattern = "[*]", replacement = "") 
+    new_month_hay[] <- lapply(new_month_hay, gsub, pattern = "[*]", replacement = "")
     new_month_hay[,-1] <- lapply(new_month_hay[,-1], function(x) as.numeric(x))
     
     #Remove Scotland data, put into long format and create averages
-    new_month_hay_summary <- new_month_hay %>% filter(!str_detect(Area, "Scotland")) %>% gather(-Area, key = Type, value = Price) %>% 
+    new_month_hay_summary <- new_month_hay %>% filter(!str_detect(Area, "Scotland")) %>% gather(-Area, key = Type, value = Price) %>%
       group_by(Type) %>% summarise(Weekly_price = mean(Price, na.rm = T)) %>% mutate(Date = current_date()) %>% select(Date, Type, Weekly_price)
     new_month_hay_summary
   })
@@ -326,7 +310,7 @@ server <- function(input, output) {
   
   ##View monthly backseries only; formatting and tidying data
   view_hay_monthly = reactive({
-    data <- as_tibble(read_xlsx("Data/hay_straw_prices.xlsx", sheet = 3))
+    data <- read_xlsx("Data/hay_straw_prices.xlsx", sheet = 3)
   })
   
   output$dl_hay <- downloadHandler(
@@ -334,10 +318,10 @@ server <- function(input, output) {
     content = function(file) {write_xlsx(list("Weekly prices" = weekly_mean(), "Monthly prices" = monthly_mean(), "Comments" = bound_comments()),format_headers = T, path = file)}
   )
   
-  ##When the submit button is clicked, save data and bring up box to say process was successful
+  ##When the submit button is clicked, save the data and bring up box to say this
   observeEvent(input$submit_hay, {
-    write_xlsx(list("Full series" = bound_series(), "Weekly prices" = weekly_mean(), "Monthly prices" = monthly_mean(), "Comments" = bound_comments()), path = "L:/Prices/AMR/Hay&Straw/hay_straw_prices.xlsx")
     write_xlsx(list("Full series" = bound_series(), "Weekly prices" = weekly_mean(), "Monthly prices" = monthly_mean(), "Comments" = bound_comments()), path = "L:/Prices/Dashboards/Hay and straw/Data/hay_straw_prices.xlsx")
+    write_xlsx(list("Full series" = bound_series(), "Weekly prices" = weekly_mean(), "Monthly prices" = monthly_mean(), "Comments" = bound_comments()), path = "L:/Prices/AMR/Hay&Straw/hay_straw_prices.xlsx")
     showModal(modalDialog(
       title = "Data saved to app!",
       "To download an xlsx version of this data instead please select download"
@@ -347,3 +331,4 @@ server <- function(input, output) {
 }
 # Run the app ----
 shinyApp(ui, server)
+
