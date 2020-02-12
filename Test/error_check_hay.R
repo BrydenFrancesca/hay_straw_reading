@@ -6,8 +6,8 @@ pacman::p_load(zoo, dplyr, readxl, stringr, reshape2, pdftools, writexl, tidyr, 
 
 #Check backseries is there
 backseries_available <- class(try(read_xlsx("../Data/hay_straw_prices.xlsx", sheet = 1))) %>% 
-                          grepl(pattern = "try-error") %>%
-                          sum() == 0
+  grepl(pattern = "try-error") %>%
+  sum() == 0
 
 #Check data is available and read it in
 pdf_available <- class(try(pdf_data("error_check.pdf"))) %>% 
@@ -40,12 +40,12 @@ new_month_hay <- new_month_hay %>% filter(y != as.numeric(trade_row))
 
 ##Check key words are available
 key_words_available <- try(sum(sum(grepl("Source", new_month_hay$text)) != 0,
-sum(grepl("hay", new_month_hay$text)) != 0,
-sum(grepl("straw", new_month_hay$text)) != 0,
-sum(grepl("West", new_month_hay$text)) != 0,
-sum(grepl("Pick-up", new_month_hay$text)) != 0,
-sum(grepl("straw", new_month_hay$text)) != 0,
-sum(grepl("baled", new_month_hay$text)) != 0) == 7)
+                               sum(grepl("hay", new_month_hay$text)) != 0,
+                               sum(grepl("straw", new_month_hay$text)) != 0,
+                               sum(grepl("West", new_month_hay$text)) != 0,
+                               sum(grepl("Pick-up", new_month_hay$text)) != 0,
+                               sum(grepl("straw", new_month_hay$text)) != 0,
+                               sum(grepl("baled", new_month_hay$text)) != 0) == 7)
 
 ##Find coordinates corresponding to rows and columns in data
 new_month_hay <- new_month_hay %>% filter(y > as.numeric(new_month_hay[grep("Source", new_month_hay$text), 4]))
@@ -78,7 +78,7 @@ column_names <- str_trim(column_names)
 
 ##Check column names are correct
 column_names_correct <- try(sum(column_names != c("Area", "Pick-up baled seed hay", "Pick-up baled meadow hay", "Big bale hay", "Pick-up baled barley straw", 
-                  "Pick-up baled wheat straw", "Big sq baled barley straw", "Big sq baled wheat straw", "Big baled rape straw")) == 0)
+                                                  "Pick-up baled wheat straw", "Big sq baled barley straw", "Big sq baled wheat straw", "Big baled rape straw")) == 0)
 
 ##Rename data and remove in-text names
 "%ni%" <- Negate("%in%")
